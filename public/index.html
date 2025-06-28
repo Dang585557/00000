@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ดาวน์โหลดวิดีโอ Facebook 4K 1080P 720P</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>ดาวน์โหลดวิดีโอ Facebook</h1>
+    <input type="text" id="videoURL" placeholder="วางลิงก์วิดีโอ Facebook ที่นี่" />
+    <button onclick="fetchVideo()">ดึงวิดีโอ</button>
+    <div id="result"></div>
+    <div class="ads">
+      <p>🎯 โฆษณาของคุณที่นี่</p>
+    </div>
+  </div>
+
+  <div class="video-ad-overlay" id="videoAd">
+    <video id="adVideo" controls autoplay>
+      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+    </video>
+    <button id="closeAdBtn" onclick="closeAd()" disabled>ข้ามโฆษณา (5)</button>
+  </div>
+
+  <script>
+    let downloadLink = "";
+    let countdown = 5;
+    let interval;
+
+    function fetchVideo() {
+      const url = document.getElementById('videoURL').value.trim();
+      const result = document.getElementById('result');
+      if (!url) {
+        result.innerHTML = '<p style="color:red;">กรุณาวางลิงก์ก่อน</p>';
+        return;
+      }
+      result.innerHTML = '<p>กำลังดึงข้อมูลวิดีโอ...</p>';
+      fetch(`/api/getVideo?url=${encodeURIComponent(url)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          let html = '<h3>เลือกระดับความคมชัด:</h3>';
+          data.formats.forEach(f => {
+            html += `<a class="download-btn" href="#" onclick="showAd('${f.url}')">${f.format_note || f.height + 'p'}</a>`;
+          });
+          result.innerHTML = html;
+        })
+        .catch(err => {
+          console.error(err);
+          result.innerHTML = '<p style="color:red;">เกิดข้อผิดพลาด: ' + err.message + '</p>';
+        });
+    }
+
+    function showAd(link) {
+      downloadLink = link;
+      document.getElementById('videoAd').style.display = 'flex';
+      document.getElementById('adVideo').currentTime = 0;
+      document.getElementById('adVideo').play();
+      const btn = document.getElementById('closeAdBtn');
+      countdown = 5;
+      btn.disabled = true;
+      btn.textContent = `ข้ามโฆษณา (${countdown})`;
+      interval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          btn.textContent = `ข้ามโฆษณา (${countdown})`;
+        } else {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.textContent = 'ข้ามโฆษณา';
+        }
+      }, 1000);
+    }
+
+    function closeAd() {
+      if (!downloadLink) return;
+      document.getElementById('videoAd').style.display = 'none';
+      window.open(downloadLink, '_blank');
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').then(() => {
+        console.log("✅ Service Worker Registered");
+      });
+    }
+  </script>
+</body>
+</html>
